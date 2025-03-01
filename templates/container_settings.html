@@ -1,0 +1,221 @@
+{% extends 'admin/base.html' %}
+{% block content %}
+
+{% set docker_assignment = settings.get('docker_assignment') %}
+
+<div class="jumbotron">
+    <div class="container">
+        <h1>Docker Compose Configuration</h1>
+    </div>
+</div>
+<div class="container">
+    {% with messages = get_flashed_messages() %}
+    {% if messages %}
+    {% for message in messages %}
+    <div class="alert alert-danger" role="alert">
+        {{ message }}
+    </div>
+    {% endfor %}
+    {% endif %}
+    {% endwith %}
+    
+    <div class="row">
+        <div class="col-md-6 offset-md-3">
+            <form method="post" action="/containers/api/settings/update" accept-charset="utf-8" autocomplete="off" role="form" class="form-horizontal">
+                <!-- Docker Connection Settings -->
+                <h3>Docker Connection</h3>
+                <div class="form-group">
+                    <label for="docker_base_url">Docker Base URL</label>
+                    <input class="form-control" type="text" name="docker_base_url" id="docker_base_url"
+                        placeholder="unix://var/run/docker.sock or tcp://example.com:port"
+                        value='{{ settings.docker_base_url|default("") }}' />
+                    <small class="form-text text-muted">
+                        The URL used to connect to the Docker daemon
+                    </small>
+                </div>
+
+                <div class="form-group">
+                    <label for="docker_hostname">Public Hostname</label>
+                    <input class="form-control" type="text" name="docker_hostname" id="docker_hostname"
+                        placeholder="challenges.ctf.example.com"
+                        value='{{ settings.docker_hostname|default("") }}' />
+                    <small class="form-text text-muted">
+                        The hostname shown to users for connecting to services
+                    </small>
+                </div>
+
+                <!-- Compose Settings -->
+                <h3>Docker Compose Configuration</h3>
+                <div class="form-group">
+                    <label for="compose_version">Compose File Version</label>
+                    <select class="form-control" name="compose_version" id="compose_version">
+                        <option value="3" {% if settings.compose_version == "3" %}selected{% endif %}>3</option>
+                        <option value="3.8" {% if settings.compose_version == "3.8" %}selected{% endif %}>3.8</option>
+                        <option value="3.9" {% if settings.compose_version == "3.9" %}selected{% endif %}>3.9</option>
+                    </select>
+                    <small class="form-text text-muted">
+                        Docker Compose file version to use for services
+                    </small>
+                </div>
+
+                <div class="form-group">
+                    <label for="compose_project_prefix">Project Name Prefix</label>
+                    <input class="form-control" type="text" name="compose_project_prefix" id="compose_project_prefix"
+                        placeholder="ctfd"
+                        value='{{ settings.compose_project_prefix|default("ctfd") }}' />
+                    <small class="form-text text-muted">
+                        Prefix for Docker Compose project names
+                    </small>
+                </div>
+
+                <div class="form-group">
+                    <label for="compose_networks_default">Default Network</label>
+                    <input class="form-control" type="text" name="compose_networks_default" id="compose_networks_default"
+                        placeholder="ctfd_challenges"
+                        value='{{ settings.compose_networks_default|default("ctfd_challenges") }}' />
+                    <small class="form-text text-muted">
+                        Default network for challenge services
+                    </small>
+                </div>
+
+                <!-- Resource Limits -->
+                <h3>Resource Limits</h3>
+                <div class="form-group">
+                    <label for="container_expiration">Container Expiration (minutes)</label>
+                    <input class="form-control" type="number" name="container_expiration" id="container_expiration"
+                        placeholder="45"
+                        value='{{ settings.container_expiration|default("") }}' />
+                    <small class="form-text text-muted">
+                        Time before containers are automatically removed (0 = never)
+                    </small>
+                </div>
+
+                <div class="form-group">
+                    <label for="container_maxmemory">Maximum Memory (MB)</label>
+                    <input class="form-control" type="number" name="container_maxmemory" id="container_maxmemory"
+                        placeholder="512"
+                        value='{{ settings.container_maxmemory|default("") }}' />
+                    <small class="form-text text-muted">
+                        Maximum memory allocation per service
+                    </small>
+                </div>
+
+                <div class="form-group">
+                    <label for="container_maxcpu">Maximum CPU Cores</label>
+                    <input class="form-control" type="number" step="0.1" name="container_maxcpu" id="container_maxcpu"
+                        placeholder="0.5"
+                        value='{{ settings.container_maxcpu|default("") }}' />
+                    <small class="form-text text-muted">
+                        Maximum CPU cores per service (e.g., 0.5 = half a core)
+                    </small>
+                </div>
+
+                <!-- Assignment Mode -->
+                <h3>Service Assignment</h3>
+                <div class="form-group">
+                    <label>Docker Service Restrictions</label>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="docker_assignment" id="docker_per_team"
+                            value="team" {% if docker_assignment=='team' %}checked{% endif %}>
+                        <label class="form-check-label" for="docker_per_team">
+                            One service instance per team
+                        </label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="docker_assignment" id="docker_per_user"
+                            value="user" {% if docker_assignment=='user' %}checked{% endif %}>
+                        <label class="form-check-label" for="docker_per_user">
+                            One service instance per user
+                        </label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="docker_assignment" id="docker_unlimited"
+                            value="unlimited" {% if docker_assignment=='unlimited' %}checked{% endif %}>
+                        <label class="form-check-label" for="docker_unlimited">
+                            Unlimited instances
+                        </label>
+                    </div>
+                    <small class="form-text text-muted">
+                        How service instances are assigned to participants
+                    </small>
+                </div>
+
+                <!-- Submit Buttons -->
+                <div class="row mt-3">
+                    <div class="col-md-12 text-center">
+                        <button type="submit" class="btn btn-success">Save Settings</button>
+                        <a class="btn btn-danger" href="{{ url_for('.route_containers_dashboard') }}">Cancel</a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Instructions -->
+    <div class="row mt-5">
+        <div class="col-md-12">
+            <h3>Setup Instructions</h3>
+            <div class="card">
+                <div class="card-body">
+                    <h5>Docker Connection</h5>
+                    <p>The Base URL can be configured in several ways:</p>
+                    <ul>
+                        <li><code>unix://var/run/docker.sock</code> - Local Docker socket</li>
+                        <li><code>tcp://hostname:port</code> - Remote Docker daemon</li>
+                        <li><code>ssh://user@hostname</code> - SSH connection to Docker host</li>
+                    </ul>
+                    
+                    <h5>Docker Compose</h5>
+                    <p>Each challenge can define additional services using Docker Compose configuration. Example:</p>
+                    <pre><code>{
+  "db": {
+    "image": "mysql:5.7",
+    "environment": {
+      "MYSQL_ROOT_PASSWORD": "example"
+    }
+  },
+  "redis": {
+    "image": "redis:alpine"
+  }
+}</code></pre>
+                    
+                    <h5>Networks</h5>
+                    <p>Services can be connected to custom networks. The default network allows communication between services in the same challenge.</p>
+                    
+                    <h5>Resource Limits</h5>
+                    <p>Set appropriate resource limits to prevent abuse and ensure fair distribution of resources.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Add any client-side validation or dynamic behavior here
+    const form = document.querySelector('form');
+    form.addEventListener('submit', function(e) {
+        // Basic validation
+        const required = ['docker_base_url', 'compose_version', 'compose_project_prefix'];
+        let valid = true;
+        
+        required.forEach(field => {
+            const input = document.getElementById(field);
+            if (!input.value.trim()) {
+                valid = false;
+                input.classList.add('is-invalid');
+            } else {
+                input.classList.remove('is-invalid');
+            }
+        });
+
+        if (!valid) {
+            e.preventDefault();
+            alert('Please fill in all required fields');
+        }
+    });
+});
+</script>
+{% endblock %}

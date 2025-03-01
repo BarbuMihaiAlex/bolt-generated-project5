@@ -1,0 +1,165 @@
+{% extends "admin/base.html" %}
+
+{% block content %}
+<div class="jumbotron">
+    <div class="container">
+        <h1>Service Metrics</h1>
+    </div>
+</div>
+
+<div class="container">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Resource Usage</h3>
+                </div>
+                <div class="card-body">
+                    <canvas id="metricsChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Current Usage</h3>
+                </div>
+                <div class="card-body">
+                    <table class="table">
+                        <tr>
+                            <td>CPU Usage:</td>
+                            <td id="currentCpu">-</td>
+                        </tr>
+                        <tr>
+                            <td>Memory Usage:</td>
+                            <td id="currentMemory">-</td>
+                        </tr>
+                        <tr>
+                            <td>Network RX:</td>
+                            <td id="currentNetworkRx">-</td>
+                        </tr>
+                        <tr>
+                            <td>Network TX:</td>
+                            <td id="currentNetworkTx">-</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Service Information</h3>
+                </div>
+                <div class="card-body">
+                    <table class="table">
+                        <tr>
+                            <td>Service ID:</td>
+                            <td>{{ service.container_id }}</td>
+                        </tr>
+                        <tr>
+                            <td>Challenge:</td>
+                            <td>{{ service.challenge.name }}</td>
+                        </tr>
+                        <tr>
+                            <td>Created:</td>
+                            <td>{{ service.timestamp|format_time }}</td>
+                        </tr>
+                        <tr>
+                            <td>Status:</td>
+                            <td>
+                                {% if service.is_running %}
+                                <span class="badge badge-success">Running</span>
+                                {% else %}
+                                <span class="badge badge-danger">Stopped</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+let metricsChart;
+
+function initChart() {
+    const ctx = document.getElementById('metricsChart').getContext('2d');
+    metricsChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [{
+                label: 'CPU Usage (%)',
+                borderColor: 'rgb(75, 192, 192)',
+                data: []
+            }, {
+                label: 'Memory Usage (MB)',
+                borderColor: 'rgb(255, 99, 132)',
+                data: []
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+}
+
+function updateMetrics() {
+    fetch(`/containers/api/metrics/{{ service.container_id }}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.current) {
+                document.getElementById('currentCpu').textContent = `${data.current.cpu_usage}%`;
+                document.getElementById('currentMemory').textContent = `${data.current.memory_usage} MB`;
+                document.getElementById('currentNetworkRx').textContent = formatBytes(data.current.network_rx);
+                document.getElementById('currentNetworkTx').textContent = formatBytes(data.current.network_tx);
+            }
+
+            if (data.history) {
+                const labels = data.history.map(m => new Date(m.timestamp).toLocaleTimeString());
+                const cpuData = data.history.map(m => m.cpu_usage);
+                const memoryData = data.history.map(m => m.memory_usage);
+
+                metricsChart.data.labels = labels;
+                metricsChart.data.datasets[0].data = cpuData;
+                metricsChart.data.datasets[1].data = memoryData;
+                metricsChart.update();
+            }
+        });
+}
+
+function formatBytes(bytes) {
+    const units = ['B', 'KB', 'MB', 'GB'];
+    let value = bytes;
+    let unitIndex = 0;
+    
+    while (value >= 1024 && unitIndex < units.length - 1) {
+        value /= 1024;
+        unitIndex++;
+    }
+    
+    return `${value.toFixed(2)} ${units[unitIndex]}`;
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    initChart();
+    updateMetrics();
+    setInterval(updateMetrics, 5000);
+});
+</script>
+{% endblock %}

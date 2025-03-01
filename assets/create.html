@@ -1,0 +1,74 @@
+{% extends "admin/challenges/create.html" %}
+
+{% block header %}
+<div class="alert alert-secondary" role="alert">
+    Docker Compose challenges allow you to create complex, multi-container environments for CTF challenges.
+</div>
+{% endblock %}
+
+{% block value %}
+<div class="form-group">
+    <label for="initial">Initial Value</label>
+    <input type="number" class="form-control" name="initial" placeholder="Enter initial point value" required>
+</div>
+
+<div class="form-group">
+    <label for="decay">Decay Limit</label>
+    <input type="number" class="form-control" name="decay" placeholder="Enter decay limit" required>
+</div>
+
+<div class="form-group">
+    <label for="minimum">Minimum Value</label>
+    <input type="number" class="form-control" name="minimum" placeholder="Enter minimum value" required>
+</div>
+
+<div class="form-group">
+    <label for="image">Main Service Image</label>
+    <select class="form-control" name="image" id="container-image" required disabled>
+        <option value="" id="container-image-default" disabled selected>Loading...</option>
+    </select>
+</div>
+
+<div class="form-group">
+    <label for="port">Service Port</label>
+    <input type="number" class="form-control" name="port" placeholder="Enter port to expose" required>
+</div>
+
+<div class="form-group">
+    <label for="command">Command (optional)</label>
+    <input type="text" class="form-control" name="command" placeholder="Enter command to run">
+</div>
+
+<div class="form-group">
+    <label for="volumes">Volumes (JSON format)</label>
+    <input type="text" class="form-control" name="volumes" placeholder='{"host_path": {"bind": "/container_path", "mode": "rw"}}'>
+</div>
+
+<div class="form-group">
+    <label for="compose_config">Additional Compose Configuration (JSON)</label>
+    <textarea class="form-control" name="compose_config" rows="4" placeholder='{
+    "depends_on": ["db"],
+    "restart": "always"
+}'></textarea>
+</div>
+
+<div class="form-group">
+    <label for="environment">Environment Variables (JSON)</label>
+    <textarea class="form-control" name="environment" rows="3" placeholder='{
+    "MYSQL_ROOT_PASSWORD": "example",
+    "MYSQL_DATABASE": "ctf"
+}'></textarea>
+</div>
+
+<div class="form-group">
+    <label for="networks">Networks Configuration (JSON)</label>
+    <textarea class="form-control" name="networks" rows="3" placeholder='{
+    "frontend": {"ipv4_address": "172.20.0.2"},
+    "backend": null
+}'></textarea>
+</div>
+{% endblock %}
+
+{% block type %}
+<input type="hidden" value="container" name="type" id="chaltype">
+{% endblock %}
